@@ -12,3 +12,6 @@ Obviously from here you can do what you want with the data (e.g. send it to disc
 The system runs on balena (make sure you use 64-bit and `balenaOS 2.94.4`; there is an [issue](https://github.com/balena-io-experimental/libcamera-apps/issues/1) with at least some newer versions.
 
 The system was created for internal use in [Hackerspace Trójmiasto](https://hs3.pl).
+
+
+More info (blog posts / photo's / etc) will follow.
