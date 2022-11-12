@@ -1,0 +1,24 @@
+name: voncount
+type: sw.application
+description: >-
+  Yolo 5 people counter
+assets:
+  repository:
+    type: blob.asset
+    data:
+      url: ''
+  logo:
+    type: blob.asset
+    data:
+      url: ''        
+data:
+  applicationConfigVariables:
+    - BALENA_HOST_CONFIG_gpu_mem: 128
+    - BALENA_HOST_CONFIG_dtoverlay: "vc4-kms-v3d"
+    - BALENA_HOST_CONFIG_camera_auto_detect: 1
+    - BALENA_HOST_CONFIG_max_framebuffers: 2
+  defaultDeviceType: raspberrypi3-64
+  supportedDeviceTypes:
+    - raspberrypi3-64
+    - fincm3
+version: 0.1.0

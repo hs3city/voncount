@@ -1,0 +1,38 @@
+FROM balenalib/%%BALENA_MACHINE_NAME%%-debian:bullseye-run
+
+RUN apt-get update && apt-get install -y \
+  vim \
+  git \
+  gcc \
+  libcamera-dev \
+  libcamera-apps-lite \
+  python3 \
+  python3-dev \
+  python3-pip \
+  && apt-get install -y python3-picamera2 --no-install-recommends \
+  && true
+
+RUN pip install --upgrade pip
+
+RUN python3 --version
+
+
+ENV UDEV=on
+
+RUN git clone https://github.com/ultralytics/yolov5
+WORKDIR yolov5
+RUN git checkout  6ae3dff7d48bd914a5ab5d20e277b8222cd547c7 \
+    && sed -i 's/opencv-python>=4.1.1/opencv-python-headless/' requirements.txt \
+    && sed -i 's/torch>=1.7.0/torch==1.8.0/' requirements.txt \
+    && sed -i 's/torchvision>=0.8.1/torchvision==0.9.1/' requirements.txt \
+    && pip install --extra-index-url=https://www.piwheels.org/simple -r requirements.txt \
+    && true
+
+RUN pip install RPi.GPIO==0.7.1 gpiozero==1.6.2
+
+# downloading and caching the model
+RUN python3 -c 'import torch;torch.hub.load("ultralytics/yolov5", "yolov5s")'
+
+COPY count.py .
+
+CMD (udevadm control --reload; python3 count.py)
