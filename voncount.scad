@@ -1,14 +1,20 @@
 BASE_THICKNESS = 1;
-PIMB_L = 84.5;
+PIMB_L = 85;
 PIMB_W = 56.0;
 PIMB_H = 1.45;
-PIMB_X = 0;
-PIMB_Y = -30;
-PIMB_Z = 0;
 PIMB_R = 3;
-PIMB_SCREWS_Y = [-PIMB_W / 2 + 4, PIMB_W / 2 - 4];
-PIMB_SCREWS_X = [-PIMB_L / 2 + 23, PIMB_L / 2 - 4];
-PIMB_SCREWS_M = 3;
+PIMB_MARGINS = 3;
+PIMB_SCREWS_POS = [
+    [-PIMB_L / 2 + 22.5, -PIMB_W/2 + 3.5, [180]],
+    [PIMB_L / 2 - 3.5, -PIMB_W/2 + 3.5, [180, 225, 270]],
+    [-PIMB_L / 2 + 22.5, PIMB_W/2 - 3.5, [0]],
+    [PIMB_L / 2 - 3.5, PIMB_W/2 - 3.5, [0, 315, 270]],
+];
+PIMB_CONNECTOR_HOLE = [
+    [PIMB_L / 2 - 10.6, PIMB_W / 2, 10, 7],
+    [-PIMB_L / 2, PIMB_W / 2 - 10.25, 16, 6],
+];
+PIMB_SCREWS_M = 2.5;
 PIMB_SCREWS_LENGTH = BASE_THICKNESS * 5; // from outside of base
 PIMB_NUT_HEIGHT = 1;
 DIGIT_L = 18;
@@ -26,22 +32,46 @@ CAMERA_SCREWS_LENGTH = 14.5; // from outside of base
 CAMERA_NUT_HEIGHT = 1;
 CAMERA_SCREWS_M = 2;
 
+BOX_BOTTOM = 1;
+BOX_WALLS = 1;
+BOX_RIDGE = 2;
+PIMB_UNDER_BOARD_SPACE = 3; // space for sunken screw heads
+PIMB_SCREW_PADS_R = 3.5; // actually they're more like 3, but there is some extra space
+PIMB_SCREW_HEAD_R = 2.7;
+SCREW_HOLE_FACTOR = 1.2; // if screw is M2, make size of hole this much larger
+
+MAGNET_R = 7.5;
+MAGNET_H = 2.2;
+BOX_ROTATION_FROM_VERTICAL = 15;
+
 $fn=20;
+function enforce_3_vector(x) = is_list(x) ? x : [x, x, x];
+
+module rounded_corner_cube(dimensions, r=0) {
+    dimensions = enforce_3_vector(dimensions);
+    r = enforce_3_vector(r);
+    up(dimensions.z / 2) {
+        minkowski() {
+            cube(dimensions - 2 * r, center=true);
+            scale(r) sphere(r=1);
+        }
+    }
+}
+
+module MB_no_holes () {
+    linear_extrude(PIMB_H) {
+        minkowski() {
+            square([PIMB_L-2 * PIMB_R, PIMB_W - 2 * PIMB_R], center=true);
+            circle(PIMB_R);
+        }
+    }
+}
 module MB() {
-    translate([PIMB_X, PIMB_Y, PIMB_Z]) {
-            linear_extrude(PIMB_H) {
-                difference () {
-                    minkowski() {
-                        square([PIMB_L-2 * PIMB_R, PIMB_W - 2 * PIMB_R], center=true);
-                        circle(PIMB_R);
-                    }
-                    for(x=PIMB_SCREWS_X, y=PIMB_SCREWS_Y) {
-                        translate([x, y, 0]) {
-                            circle(PIMB_SCREWS_M / 2);
-                        }
-                    }
-                }
-            }
+    difference() {
+        MB_no_holes();
+        repeat_for_MB_screw_positions() {
+            down(1) cylinder(r=PIMB_SCREWS_M / 2, h=PIMB_H + 2);
+        }
     }
 }
 
@@ -73,15 +103,11 @@ module camera_screws() {
 
 
 module pimb_screws() {
-    translate([PIMB_X, PIMB_Y, 0]) {
-        for(x=PIMB_SCREWS_X, y=PIMB_SCREWS_Y) {
-            translate([x, y, 0]) {
-                difference() {
-                    cylinder(r=PIMB_SCREWS_M * 1.1 + 1, h=PIMB_SCREWS_LENGTH);
-                    translate([0, 0, BASE_THICKNESS]) cylinder(r=PIMB_SCREWS_M / 2, h=PIMB_SCREWS_LENGTH);
-                    translate([0, 0, PIMB_SCREWS_LENGTH - 3 * PIMB_NUT_HEIGHT]) cylinder(r=PIMB_SCREWS_M * 1.1 , h=PIMB_SCREWS_LENGTH, $fn=6);
-                }
-            }
+    repeat_for_MB_screw_positions() {
+        difference() {
+            cylinder(r=PIMB_SCREWS_M * 1.1 + 1, h=PIMB_SCREWS_LENGTH);
+            translate([0, 0, BASE_THICKNESS]) cylinder(r=PIMB_SCREWS_M / 2, h=PIMB_SCREWS_LENGTH);
+            translate([0, 0, PIMB_SCREWS_LENGTH - 3 * PIMB_NUT_HEIGHT]) cylinder(r=PIMB_SCREWS_M * 1.1 , h=PIMB_SCREWS_LENGTH, $fn=6);
         }
     }
 }
@@ -101,7 +127,7 @@ module base() {
 
 
 module voncount() {
-    rotate(180) scale(.3) import(file="voncount.svg", center=true);
+    scale(.1) import(file="voncount.svg", center=true);
 }
 /*
 module hex_grid() {
@@ -174,6 +200,136 @@ module spacers_15mm() {
             difference() {
                 cylinder(r=3, h=15, $fn=6);
                 down(1) cylinder(r=1.3, h=17);
+            }
+        }
+    }
+}
+
+module repeat_for_MB_screw_positions() {
+    for(x_y_rots=PIMB_SCREWS_POS) {
+        x = x_y_rots[0];
+        y = x_y_rots[1];
+        for (rot=x_y_rots[2]) {
+            translate([x, y, 0]) rotate([0, 0, rot]) children();
+        }
+    }
+}
+
+module make_MB_base_holes_and_support() {
+    difference() {
+        union() {
+            children();
+            repeat_for_MB_screw_positions() {
+                translate([-PIMB_SCREW_PADS_R, 0, 0]) cube([PIMB_SCREW_PADS_R * 2, PIMB_SCREW_PADS_R * 2 + 10, BOX_BOTTOM + PIMB_UNDER_BOARD_SPACE]);
+                cylinder(r=PIMB_SCREW_PADS_R, h=BOX_BOTTOM + PIMB_UNDER_BOARD_SPACE);
+            }
+        }
+        repeat_for_MB_screw_positions() {
+            down(BOX_BOTTOM) cylinder(r=PIMB_SCREW_HEAD_R, h=BOX_BOTTOM + PIMB_UNDER_BOARD_SPACE);
+            cylinder(r=PIMB_SCREWS_M / 2 * SCREW_HOLE_FACTOR, h=BOX_BOTTOM + PIMB_UNDER_BOARD_SPACE + 1);
+        }
+    }
+}
+
+module cut_out_connector_holes() {
+    difference() {
+        children();
+        for (x_y_w_h = PIMB_CONNECTOR_HOLE) {
+            let (x = x_y_w_h[0], y=x_y_w_h[1], w=x_y_w_h[2], h=x_y_w_h[3]) {
+                translate([x, y, BOX_BOTTOM + PIMB_UNDER_BOARD_SPACE]) rounded_corner_cube([w, w, h], r=.5);
+            }
+        }
+    }
+}
+
+module cut_out_text() {
+    difference() {
+        children();
+        linear_extrude(BOX_BOTTOM / 4) {
+            scale([-1, 1, 1]) voncount();
+            scale([-.7, .7, 1]) {
+                translate([0, 18, 0]) text("Count von Count", halign="center");
+                translate([0, -27, 0]) text("HS3.pl", halign="center");
+            }
+        }
+    }
+}
+
+module BOX(offset, h=10, z_r=1) rounded_corner_cube([PIMB_L + 2 * offset + PIMB_MARGINS * 2, PIMB_W + 2 * offset + PIMB_MARGINS * 2, h ], [4 + offset, 4 + offset, z_r]);
+module OUTER_BOX() BOX(BOX_WALLS);
+module INNER_BOX() up(BOX_WALLS) BOX(0);
+
+module pibox_holder() {
+    render() {
+        intersection() {
+            up(500) cube(1000, center=true);  // only z > 0
+            let (pad_size = (MAGNET_R + BOX_WALLS) * 2) {
+                difference() {
+                    union() {
+                        translate([(PIMB_L / 2 + BOX_WALLS + PIMB_MARGINS), 0 , 0]) {
+                            render() cut_out_connector_holes() translate([-PIMB_L / 2 - PIMB_MARGINS - BOX_WALLS + .45, 7, 0]) holder(110, 1);
+                        }
+                        magnet_holder_no_hole(-(53 - pad_size / 2), 30, pad_size);
+                        magnet_holder_no_hole(57 + pad_size / 2, -60, pad_size);
+                    }
+                    magnet_holder_hole(-(53 - pad_size / 2), 30, pad_size);
+                    magnet_holder_hole(57 + pad_size / 2, -60, pad_size);
+                }
+            }
+        }
+    }
+}
+
+module magnet_holder_no_hole(pos, rot, pad_size) {
+    rotate(-BOX_ROTATION_FROM_VERTICAL, [0, 1, 0]) {
+        translate([0, pos, 1.2]) up(pad_size / 2 + 1) rotate(rot, [1, 0, 0]) rotate(90, [0, 1, 0]) {
+            rounded_corner_cube([pad_size,  pad_size, 1.5 * BOX_WALLS + MAGNET_H], [2, 2, 0]);
+        }
+    }
+}
+module magnet_holder_hole(pos, rot, pad_size) {
+    rotate(-BOX_ROTATION_FROM_VERTICAL, [0, 1, 0]) {
+        translate([0, pos, 1.2]) up(pad_size / 2 + 1) rotate(rot, [1, 0, 0]) rotate(90, [0, 1, 0]) {
+            up(BOX_WALLS / 2) cylinder(r=MAGNET_R, h=MAGNET_H);
+            up(BOX_WALLS) translate([-(pad_size + MAGNET_R / 4), 0, 0]) rounded_corner_cube([2 * pad_size, MAGNET_R * 2, 1.5 * BOX_WALLS + MAGNET_H], 0);
+        }
+    }
+}
+
+module pibox_bottom() {
+    translate([(PIMB_L / 2 + BOX_WALLS + PIMB_MARGINS), 0 , 0])
+        intersection() {
+            OUTER_BOX();
+            cut_out_text() cut_out_connector_holes() make_MB_base_holes_and_support() {
+                difference() {
+                    OUTER_BOX();
+                    union() {
+                        up(BOX_BOTTOM + PIMB_UNDER_BOARD_SPACE + PIMB_H) difference() {
+                            up(100) cube(200, center=true);
+                            down(1) BOX(BOX_WALLS / 2, h = BOX_RIDGE + 1, z_r=0);
+                        }
+                        INNER_BOX();
+                        // up(BOX_BOTTOM*3) scale([1, 1, 10]) MB_no_holes();
+                    }
+                }
+            }
+        }
+}
+
+pibox_bottom();
+pibox_holder();
+
+module holder(h, thickness = 0.5) {
+    rotate(90, [1, 0, 0]) {
+        translate([thickness / 2, thickness / 2, -h/2]) {
+            linear_extrude(h) {
+                minkowski() {
+                    union() {
+                        translate([-.005, -.005]) square([10, .01]);
+                        rotate(90) polygon([[0, .5], [7.7, 2.57], [4, .5]]);
+                    }
+                    circle(r=thickness/2 - 0.001);
+                }
             }
         }
     }
