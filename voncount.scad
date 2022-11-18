@@ -11,21 +11,22 @@ PIMB_SCREWS_POS = [
     [PIMB_L / 2 - 3.5, PIMB_W/2 - 3.5, [0, 315, 270]],
 ];
 PIMB_CONNECTOR_HOLE = [
+    // x, y, width, height
     [PIMB_L / 2 - 10.6, PIMB_W / 2, 10, 7],
-    [-PIMB_L / 2, PIMB_W / 2 - 10.25, 16, 6],
+    [-PIMB_L / 2, PIMB_W / 2 - 10.25, 16, 15],
 ];
 PIMB_SCREWS_M = 2.5;
 PIMB_SCREWS_LENGTH = BASE_THICKNESS * 5; // from outside of base
 PIMB_NUT_HEIGHT = 1;
-DIGIT_L = 18;
-DIGIT_W = 25;
-DIGIT_X = 0;
-DIGIT_Y = 60;
-DIGIT_SPACE = .3;
+DIGIT_L = 25;
+DIGIT_W = 18;
+DIGIT_X = -26;
+DIGIT_Y = 2.5;
+DIGIT_SPACE = 1;
 CAMERA_R = 7;
-CAMERA_SPACE = .3;
-CAMERA_X = 0;
-CAMERA_Y = 20;
+CAMERA_SPACE = 1;
+CAMERA_X = 11;
+CAMERA_Y = -15;
 CAMERA_SCREWS_X = [21 / 2, -21 / 2];
 CAMERA_SCREWS_Y = [13.5 / 2, -13.5 / 2];
 CAMERA_SCREWS_LENGTH = 14.5; // from outside of base
@@ -35,10 +36,16 @@ CAMERA_SCREWS_M = 2;
 BOX_BOTTOM = 1;
 BOX_WALLS = 1;
 BOX_RIDGE = 2;
+BOX_HEIGHT = 39;
 PIMB_UNDER_BOARD_SPACE = 3; // space for sunken screw heads
 PIMB_SCREW_PADS_R = 3.5; // actually they're more like 3, but there is some extra space
 PIMB_SCREW_HEAD_R = 2.7;
 SCREW_HOLE_FACTOR = 1.2; // if screw is M2, make size of hole this much larger
+BOX_NR_AIRHOLES_X = 4;
+BOX_NR_AIRHOLES_Y = 5;
+BOX_AIRHOLE_WIDTH = 3;
+BOX_AIRHOLE_HEIGHT = 17;
+BOX_AIRHOLE_MARGIN = 10;
 
 MAGNET_R = 7.5;
 MAGNET_H = 2.2;
@@ -194,12 +201,12 @@ module up(z) {
     translate([0, 0, z]) children();
 }
 
-module spacers_15mm() {
-    for (x=[-1, 1], y=[-1, 1]) {
-        translate([x * 5, y * 5, 0]) {
+module spacers(h, m=2.5, count=4, distance = 0) {
+    for (x=[0:count - 1]) {
+        translate([x * (distance == 0 ? m * 2 : distance), 0, 0]) {
             difference() {
-                cylinder(r=3, h=15, $fn=6);
-                down(1) cylinder(r=1.3, h=17);
+                cylinder(r=m * 1.2, h=h, $fn=6);
+                down(1) cylinder(r=m/2*1.1, h=h + 2);
             }
         }
     }
@@ -256,8 +263,8 @@ module cut_out_text() {
 }
 
 module BOX(offset, h=10, z_r=1) rounded_corner_cube([PIMB_L + 2 * offset + PIMB_MARGINS * 2, PIMB_W + 2 * offset + PIMB_MARGINS * 2, h ], [4 + offset, 4 + offset, z_r]);
-module OUTER_BOX() BOX(BOX_WALLS);
-module INNER_BOX() up(BOX_WALLS) BOX(0);
+module OUTER_BOX() BOX(BOX_WALLS, h=BOX_HEIGHT + BOX_WALLS * 2);
+module INNER_BOX() up(BOX_WALLS) BOX(0, h=BOX_HEIGHT);
 
 module pibox_holder() {
     render() {
@@ -316,9 +323,6 @@ module pibox_bottom() {
         }
 }
 
-pibox_bottom();
-pibox_holder();
-
 module holder(h, thickness = 0.5) {
     rotate(90, [1, 0, 0]) {
         translate([thickness / 2, thickness / 2, -h/2]) {
@@ -334,3 +338,67 @@ module holder(h, thickness = 0.5) {
         }
     }
 }
+
+
+//pibox_bottom();
+//pibox_holder();
+
+module cut_text_and_voncount_bottom() {
+    difference() {
+        children();
+        translate([5, 5, 0]) linear_extrude(BOX_WALLS / 2) scale([1.5, -1.5, 1]) rotate(90) voncount();
+    }
+}
+
+module cut_display_and_camera_holes() {
+    difference() {
+        children();
+        translate([DIGIT_X, DIGIT_Y, -1]) rounded_corner_cube([DIGIT_L + DIGIT_SPACE, DIGIT_W+ DIGIT_SPACE, 3 * BOX_WALLS], r=1);  // digit
+        translate([CAMERA_X, CAMERA_Y, -1]) cylinder(r=CAMERA_R + CAMERA_SPACE, h=3 * BOX_WALLS);  // camera
+
+    }
+}
+
+module cut_airholes() {
+    difference() {
+        children();
+        for (nr=[0:BOX_NR_AIRHOLES_X - 1]) {
+            x_offset = -PIMB_L / 2  + BOX_AIRHOLE_MARGIN;
+            x = (PIMB_L / 2 - 2 * BOX_AIRHOLE_MARGIN) / (BOX_NR_AIRHOLES_X - 1) * nr + x_offset;
+            translate([x, 0, 7]) rounded_corner_cube([BOX_AIRHOLE_WIDTH, 2 * PIMB_W, BOX_AIRHOLE_HEIGHT], r=BOX_AIRHOLE_WIDTH / 2.1);
+        }
+        for (nr=[0:BOX_NR_AIRHOLES_Y - 1]) {
+            y_offset = -PIMB_W / 2  + BOX_AIRHOLE_MARGIN;
+            y = (PIMB_W - 2 * BOX_AIRHOLE_MARGIN) / (BOX_NR_AIRHOLES_Y - 1) * nr + y_offset;
+            translate([PIMB_L / 2, y, 7]) rounded_corner_cube([PIMB_L, BOX_AIRHOLE_WIDTH, BOX_AIRHOLE_HEIGHT], r=BOX_AIRHOLE_WIDTH / 2.1);
+        }
+    }
+}
+
+module pibox_top() {
+cut_airholes() cut_display_and_camera_holes()
+    cut_text_and_voncount_bottom() translate([0, 0, BOX_HEIGHT + BOX_WALLS * 2]) {
+        rotate(180, [1, 0, 0]) {
+            intersection() {
+                OUTER_BOX();
+                cut_out_connector_holes() {
+                    intersection() {
+                        difference() {
+                            OUTER_BOX();
+                            INNER_BOX();
+                        }
+                        union() {
+                            up(BOX_BOTTOM + PIMB_UNDER_BOARD_SPACE + PIMB_H) difference() {
+                                up(100) cube(200, center=true);
+                                down(1) BOX(BOX_WALLS / 2, h = BOX_RIDGE + 1, z_r=0);
+                            }
+                            // up(BOX_BOTTOM*3) scale([1, 1, 10]) MB_no_holes();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+pibox_top();
