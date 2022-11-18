@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from gpiozero import LEDCharDisplay
 
-display = LEDCharDisplay(4, 17, 10, 22, 27, 3, 2, active_high=False)
+display = LEDCharDisplay(3, 2, 22, 10, 9, 4, 17, active_high=False) # 27 is dot
 #declared the GPIO pins for (a,b,c,d,e,f,g) and declared its CAS
 
 model = torch.hub.load('ultralytics/yolov5', 'yolov5s')  # or yolov5n - yolov5x6, custom
