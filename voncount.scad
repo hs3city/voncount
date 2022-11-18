@@ -20,13 +20,13 @@ PIMB_SCREWS_LENGTH = BASE_THICKNESS * 5; // from outside of base
 PIMB_NUT_HEIGHT = 1;
 DIGIT_L = 25;
 DIGIT_W = 18;
-DIGIT_X = -26;
-DIGIT_Y = 2.5;
+DIGIT_X = -27;
+DIGIT_Y = 1.5;
 DIGIT_SPACE = 1;
 CAMERA_R = 7;
 CAMERA_SPACE = 1;
-CAMERA_X = 11;
-CAMERA_Y = -15;
+CAMERA_X = 12;
+CAMERA_Y = -17;
 CAMERA_SCREWS_X = [21 / 2, -21 / 2];
 CAMERA_SCREWS_Y = [13.5 / 2, -13.5 / 2];
 CAMERA_SCREWS_LENGTH = 14.5; // from outside of base
@@ -346,7 +346,7 @@ module holder(h, thickness = 0.5) {
 module cut_text_and_voncount_bottom() {
     difference() {
         children();
-        translate([5, 5, 0]) linear_extrude(BOX_WALLS / 2) scale([1.5, -1.5, 1]) rotate(90) voncount();
+        translate([5, 5, 0]) linear_extrude(BOX_WALLS / 4) scale([1.5, -1.5, 1]) rotate(90) voncount();
     }
 }
 
