@@ -58,11 +58,12 @@ while True:
         results = model(img)
         results.print()
 
-        classes = np.array(results.xyxy[0][:, -1])
+        scores = results.xyxy[0][:, -2]
+        classes = np.array(results.xyxy[0][scores > .4, -1])
         count_by_name = {name: np.sum(classes == nr) for nr, name in results.names.items()}
 
-        sys.stdout.flush()
         print("persons:", count_by_name["person"], "pizzas: ", count_by_name["pizza"])
+        sys.stdout.flush()
 
     persons = min(count_by_name["person"], 15)
     char = f"{persons:X}"[-1]
