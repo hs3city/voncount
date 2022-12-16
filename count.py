@@ -1,10 +1,31 @@
 import sys
+import socket
+import threading
 import time
+import json
 
 from picamera2 import Picamera2
 import numpy as np
 import torch
 from gpiozero import LEDCharDisplay
+
+counts = None
+
+
+def server():
+    PORT=26178
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind(("0.0.0.0", PORT))
+        sock.listen()
+        print("listing")
+        while True:
+            conn, addr = sock.accept()
+            print("shared")
+            conn.send(json.dumps(counts).encode("UTF-8"))
+            conn.close()
+
+threading.Thread(target=server, daemon=True).start()
 
 MIN_LUX_LEVEL = 25  # if it's too dark, we're not going to count people, to save energy
 
@@ -56,5 +77,6 @@ while True:
     sys.stdout.flush()
     display.value = char
     prevchar = char
+    counts = {"persons": int(count_by_name["person"]), "pizzas": int(count_by_name["pizza"])}
 
     time.sleep(10)
