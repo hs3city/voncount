@@ -7,25 +7,49 @@ import json
 from picamera2 import Picamera2
 import numpy as np
 import torch
+import cv2
 from gpiozero import LEDCharDisplay
 
 counts = None
+newimage = None
 
 
-def server():
+def server_count():
     PORT=26178
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(("0.0.0.0", PORT))
         sock.listen()
-        print("listing")
+        print("listening")
         while True:
             conn, addr = sock.accept()
             print("shared")
             conn.send(json.dumps(counts).encode("UTF-8"))
             conn.close()
 
-threading.Thread(target=server, daemon=True).start()
+def serve_img(conn):
+    try: 
+        print("img shared")
+        if newimage is None:
+            conn.close()
+        is_success, buffer = cv2.imencode(".png", newimage)
+        conn.send(buffer)
+    finally:
+        conn.close()
+
+def server_img():
+    PORT=26179
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind(("0.0.0.0", PORT))
+        sock.listen()
+        print("listening")
+        while True:
+            conn, addr = sock.accept()
+            threading.Thread(target=serve_img, args=(conn,)).start()
+
+threading.Thread(target=server_count, daemon=True).start()
+threading.Thread(target=server_img, daemon=True).start()
 
 MIN_LUX_LEVEL = 25  # if it's too dark, we're not going to count people, to save energy
 
@@ -51,6 +75,7 @@ while True:
         count_by_name = {"person": 0, "pizza": 0}
     else:
         print(f"Bright enough (lux={lux:.2f}), yoloing now")
+        img = img[600:, 200:-600, :]
         print(img.shape)
         sys.stdout.flush()
 
@@ -61,6 +86,7 @@ while True:
         scores = results.xyxy[0][:, -2]
         classes = np.array(results.xyxy[0][scores > .4, -1])
         count_by_name = {name: np.sum(classes == nr) for nr, name in results.names.items()}
+        newimage = results.render()[0]
 
         print("persons:", count_by_name["person"], "pizzas: ", count_by_name["pizza"])
         sys.stdout.flush()
