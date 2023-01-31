@@ -33,10 +33,10 @@ CAMERA_SCREWS_LENGTH = 14.5; // from outside of base
 CAMERA_NUT_HEIGHT = 1;
 CAMERA_SCREWS_M = 2;
 
-BOX_BOTTOM = 1;
 BOX_WALLS = 1;
 BOX_RIDGE = 2;
 BOX_HEIGHT = 39;
+
 PIMB_UNDER_BOARD_SPACE = 3; // space for sunken screw heads
 PIMB_SCREW_PADS_R = 3.5; // actually they're more like 3, but there is some extra space
 PIMB_SCREW_HEAD_R = 2.7;
@@ -46,6 +46,10 @@ BOX_NR_AIRHOLES_Y = 5;
 BOX_AIRHOLE_WIDTH = 3;
 BOX_AIRHOLE_HEIGHT = 17;
 BOX_AIRHOLE_MARGIN = 10;
+
+SPACER_MB_POE_LENGTH = 15;
+SPACER_POE_PROTO_LENGTH = 9;
+TOP_TO_BOTTOM_HEIGHT = 28;
 
 MAGNET_R = 7.5;
 MAGNET_H = 2.2;
@@ -212,6 +216,17 @@ module spacers(h, m=2.5, count=4, distance = 0) {
     }
 }
 
+module spacers_loose(h, m=2.5, count=4, distance = 0) {
+    for (x=[0:count - 1]) {
+        translate([x * (distance == 0 ? m * 2 : distance), 0, 0]) {
+            difference() {
+                cylinder(r=m, h=h);
+                down(1) cylinder(r=m/2*1.2, h=h + 2);
+            }
+        }
+    }
+}
+
 module repeat_for_MB_screw_positions() {
     for(x_y_rots=PIMB_SCREWS_POS) {
         x = x_y_rots[0];
@@ -227,13 +242,13 @@ module make_MB_base_holes_and_support() {
         union() {
             children();
             repeat_for_MB_screw_positions() {
-                translate([-PIMB_SCREW_PADS_R, 0, 0]) cube([PIMB_SCREW_PADS_R * 2, PIMB_SCREW_PADS_R * 2 + 10, BOX_BOTTOM + PIMB_UNDER_BOARD_SPACE]);
-                cylinder(r=PIMB_SCREW_PADS_R, h=BOX_BOTTOM + PIMB_UNDER_BOARD_SPACE);
+                translate([-PIMB_SCREW_PADS_R, 0, 0]) cube([PIMB_SCREW_PADS_R * 2, PIMB_SCREW_PADS_R * 2 + 10, BOX_WALLS + PIMB_UNDER_BOARD_SPACE]);
+                cylinder(r=PIMB_SCREW_PADS_R, h=BOX_WALLS + PIMB_UNDER_BOARD_SPACE);
             }
         }
         repeat_for_MB_screw_positions() {
-            down(BOX_BOTTOM) cylinder(r=PIMB_SCREW_HEAD_R, h=BOX_BOTTOM + PIMB_UNDER_BOARD_SPACE);
-            cylinder(r=PIMB_SCREWS_M / 2 * SCREW_HOLE_FACTOR, h=BOX_BOTTOM + PIMB_UNDER_BOARD_SPACE + 1);
+            down(BOX_WALLS) cylinder(r=PIMB_SCREW_HEAD_R, h=BOX_WALLS + PIMB_UNDER_BOARD_SPACE);
+            cylinder(r=PIMB_SCREWS_M / 2 * SCREW_HOLE_FACTOR, h=BOX_WALLS + PIMB_UNDER_BOARD_SPACE + 1);
         }
     }
 }
@@ -243,7 +258,7 @@ module cut_out_connector_holes() {
         children();
         for (x_y_w_h = PIMB_CONNECTOR_HOLE) {
             let (x = x_y_w_h[0], y=x_y_w_h[1], w=x_y_w_h[2], h=x_y_w_h[3]) {
-                translate([x, y, BOX_BOTTOM + PIMB_UNDER_BOARD_SPACE]) rounded_corner_cube([w, w, h], r=.5);
+                translate([x, y, BOX_WALLS + PIMB_UNDER_BOARD_SPACE]) rounded_corner_cube([w, w, h], r=.5);
             }
         }
     }
@@ -252,7 +267,7 @@ module cut_out_connector_holes() {
 module cut_out_text() {
     difference() {
         children();
-        linear_extrude(BOX_BOTTOM / 4) {
+        linear_extrude(BOX_WALLS / 4) {
             scale([-1, 1, 1]) voncount();
             scale([-.7, .7, 1]) {
                 translate([0, 18, 0]) text("Count von Count", halign="center");
@@ -311,12 +326,12 @@ module pibox_bottom() {
                 difference() {
                     OUTER_BOX();
                     union() {
-                        up(BOX_BOTTOM + PIMB_UNDER_BOARD_SPACE + PIMB_H) difference() {
+                        up(BOX_WALLS + PIMB_UNDER_BOARD_SPACE + PIMB_H) difference() {
                             up(100) cube(200, center=true);
                             down(1) BOX(BOX_WALLS / 2, h = BOX_RIDGE + 1, z_r=0);
                         }
                         INNER_BOX();
-                        // up(BOX_BOTTOM*3) scale([1, 1, 10]) MB_no_holes();
+                        // up(BOX_WALLS*3) scale([1, 1, 10]) MB_no_holes();
                     }
                 }
             }
@@ -365,7 +380,8 @@ module cut_airholes() {
         for (nr=[0:BOX_NR_AIRHOLES_X - 1]) {
             x_offset = -PIMB_L / 2  + BOX_AIRHOLE_MARGIN;
             x = (PIMB_L / 2 - 2 * BOX_AIRHOLE_MARGIN) / (BOX_NR_AIRHOLES_X - 1) * nr + x_offset;
-            translate([x, 0, 7]) rounded_corner_cube([BOX_AIRHOLE_WIDTH, 2 * PIMB_W, BOX_AIRHOLE_HEIGHT], r=BOX_AIRHOLE_WIDTH / 2.1);
+            translate([x, PIMB_W, 7]) rounded_corner_cube([BOX_AIRHOLE_WIDTH, PIMB_W, BOX_AIRHOLE_HEIGHT], r=BOX_AIRHOLE_WIDTH / 2.1);
+            translate([x, -PIMB_W, 7]) rounded_corner_cube([BOX_AIRHOLE_WIDTH, PIMB_W, BOX_AIRHOLE_HEIGHT], r=BOX_AIRHOLE_WIDTH / 2.1);
         }
         for (nr=[0:BOX_NR_AIRHOLES_Y - 1]) {
             y_offset = -PIMB_W / 2  + BOX_AIRHOLE_MARGIN;
@@ -375,24 +391,45 @@ module cut_airholes() {
     }
 }
 
+module make_top_screw_receivers() {
+    difference() {
+        union() {
+            children();
+            repeat_for_MB_screw_positions() {
+                top_proto = BOX_WALLS + PIMB_UNDER_BOARD_SPACE + TOP_TO_BOTTOM_HEIGHT;
+                height = BOX_HEIGHT + BOX_WALLS * 2 - top_proto;
+                translate([-PIMB_SCREW_PADS_R, 0, top_proto]) cube([PIMB_SCREW_PADS_R * 2, PIMB_SCREW_PADS_R * 2 + 10, height]);
+                translate([0, 0, top_proto]) cylinder(r=PIMB_SCREW_PADS_R, h=height);
+            }
+        }
+        repeat_for_MB_screw_positions() {
+            top_proto = BOX_WALLS + PIMB_UNDER_BOARD_SPACE + TOP_TO_BOTTOM_HEIGHT;
+            height = BOX_HEIGHT + BOX_WALLS * 2 - top_proto;
+            up(top_proto - BOX_WALLS) cylinder(r=PIMB_SCREW_HEAD_R, h=height);
+            cylinder(r=PIMB_SCREWS_M / 2 * SCREW_HOLE_FACTOR, h=BOX_WALLS + PIMB_UNDER_BOARD_SPACE + 1);
+        }
+    }
+}
+
+
 module pibox_top() {
-cut_airholes() cut_display_and_camera_holes()
-    cut_text_and_voncount_bottom() translate([0, 0, BOX_HEIGHT + BOX_WALLS * 2]) {
+cut_text_and_voncount_bottom() cut_airholes() cut_display_and_camera_holes()
+    translate([0, 0, BOX_HEIGHT + BOX_WALLS * 2]) {
         rotate(180, [1, 0, 0]) {
             intersection() {
                 OUTER_BOX();
-                cut_out_connector_holes() {
+                make_top_screw_receivers() cut_out_connector_holes() {
                     intersection() {
                         difference() {
                             OUTER_BOX();
                             INNER_BOX();
                         }
                         union() {
-                            up(BOX_BOTTOM + PIMB_UNDER_BOARD_SPACE + PIMB_H) difference() {
+                            up(BOX_WALLS + PIMB_UNDER_BOARD_SPACE + PIMB_H) difference() {
                                 up(100) cube(200, center=true);
                                 down(1) BOX(BOX_WALLS / 2, h = BOX_RIDGE + 1, z_r=0);
                             }
-                            // up(BOX_BOTTOM*3) scale([1, 1, 10]) MB_no_holes();
+                            // up(BOX_WALLS*3) scale([1, 1, 10]) MB_no_holes();
                         }
                     }
                 }
@@ -401,4 +438,5 @@ cut_airholes() cut_display_and_camera_holes()
     }
 }
 
-pibox_top();
+// pibox_top();
+spacers_loose(h=SPACER_POE_PROTO_LENGTH, m=2.5, count=1);
