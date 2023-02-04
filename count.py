@@ -9,9 +9,44 @@ import numpy as np
 import torch
 import cv2
 from gpiozero import LEDCharDisplay
+from paho.mqtt import client as mqtt_client
+
 
 counts = None
 newimage = None
+
+
+broker = '100.89.232.16'
+port = 1883
+topic = "sensor/space/member/present"
+# generate client ID with pub prefix randomly
+client_id = f'python-mqtt-{random.randint(0, 100)}'
+username = ''
+password = ''
+
+
+def connect_mqtt() -> mqtt_client:
+    def on_connect(client, userdata, flags, rc):
+        if rc == 0:
+            print("Connected to MQTT Broker!")
+        else:
+            print("Failed to connect, return code %d\n", rc)
+
+    client = mqtt_client.Client(client_id)
+    client.username_pw_set(username, password)
+    client.on_connect = on_connect
+    client.connect(broker, port)
+    return client
+
+
+def publish(client):
+    people = counts["persons"]
+    result = client.publish(topic, people)
+    status = result[0]
+    if status == 0:
+        print(f"Send `{people}` to topic `{topic}`")
+    else:
+        print(f"Failed to send message to topic {topic}")
 
 
 def server_count():
@@ -64,6 +99,9 @@ config = picam2.create_still_configuration()
 picam2.configure(config)
 picam2.start()
 
+client = connect_mqtt()
+client.loop_start()
+
 prevchar = "NOT_A_CHAR"
 while True:
     img = picam2.capture_array()
@@ -105,5 +143,7 @@ while True:
     display.value = char
     prevchar = char
     counts = {"persons": int(count_by_name["person"]), "pizzas": int(count_by_name["pizza"])}
+
+    publish(client, counts)
 
     time.sleep(10)
