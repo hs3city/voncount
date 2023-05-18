@@ -1,3 +1,4 @@
+import os
 import sys
 import socket
 import threading
@@ -16,13 +17,13 @@ counts = None
 newimage = None
 
 
-broker = '100.89.232.16'
+broker = os.getenv('MQTT_BROKER', 'mqtt.local')
 port = 1883
 topic = "sensor/space/member/present"
 # generate client ID with pub prefix randomly
-client_id = f'python-mqtt-{random.randint(0, 100)}'
-username = ''
-password = ''
+client_id = f'voncount-mqtt-{random.randint(0, 100)}'
+username = os.getenv('MQTT_USER', '')
+password = os.getenv('MQTT_PASSWORD', '')
 
 
 def connect_mqtt() -> mqtt_client:
