@@ -15,12 +15,15 @@ from paho.mqtt import client as mqtt_client
 
 
 counts = None
+lux = None
 newimage = None
 
 
 broker = os.getenv('MQTT_BROKER', 'mqtt.local')
 port = 1883
-topic = "sensor/space/member/present"
+topic_people = "sensor/space/member/present"
+topic_lux = "sensor/light/room/0"
+
 # generate client ID with pub prefix randomly
 client_id = f'voncount-mqtt-{random.randint(0, 100)}'
 username = os.getenv('MQTT_USER', '')
@@ -43,10 +46,11 @@ def connect_mqtt() -> mqtt_client:
 
 def publish(client):
     people = counts["persons"]
-    result = client.publish(topic, people)
+    result = client.publish(topic_people, people)
+    result = client.publish(topic_lux, lux)
     status = result[0]
     if status == 0:
-        print(f"Send `{people}` to topic `{topic}`")
+        print(f"Send `{people}` (lux `{lux}`) to topic `{topic}`")
     else:
         print(f"Failed to send message to topic {topic}")
 
