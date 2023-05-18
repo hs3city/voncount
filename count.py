@@ -45,15 +45,15 @@ def connect_mqtt() -> mqtt_client:
 
 
 def publish(client):
-    people = counts["persons"]
-    result = client.publish(topic_people, people)
-    result = client.publish(topic_lux, lux)
-    status = result[0]
-    if status == 0:
-        print(f"Send `{people}` (lux `{lux}`) to topic `{topic}`")
-    else:
-        print(f"Failed to send message to topic {topic}")
-
+    data = (counts["persons"], lux)
+    topics = (topics_people, topic_lux)
+    for (datum, topic) in zip(data, topics):
+        result = client.publish(topic, datum)
+        status = result[0]
+        if status == 0:
+            print(f"Send `{datum}` to topic `{topic}`")
+        else:
+            print(f"Failed to send message `{datum}` to topic {topic}")
 
 def server_count():
     PORT=26178
