@@ -46,7 +46,7 @@ def connect_mqtt() -> mqtt_client:
 
 def publish(client):
     data = (counts["persons"], lux)
-    topics = (topics_people, topic_lux)
+    topics = (topic_people, topic_lux)
     for (datum, topic) in zip(data, topics):
         result = client.publish(topic, datum)
         status = result[0]
