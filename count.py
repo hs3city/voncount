@@ -4,6 +4,7 @@ import socket
 import threading
 import time
 import json
+import random
 
 from picamera2 import Picamera2
 import numpy as np
