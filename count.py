@@ -146,6 +146,6 @@ while True:
     prevchar = char
     counts = {"persons": int(count_by_name["person"]), "pizzas": int(count_by_name["pizza"])}
 
-    publish(client, counts)
+    publish(client)
 
     time.sleep(10)
