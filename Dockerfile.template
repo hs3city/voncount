@@ -28,7 +28,9 @@ RUN git checkout  6ae3dff7d48bd914a5ab5d20e277b8222cd547c7 \
     && pip install --extra-index-url=https://www.piwheels.org/simple -r requirements.txt \
     && true
 
-RUN pip install RPi.GPIO==0.7.1 gpiozero==1.6.2
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
 
 # downloading and caching the model
 RUN python3 -c 'import torch;torch.hub.load("ultralytics/yolov5", "yolov5s")'

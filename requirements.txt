@@ -1,0 +1,4 @@
+# Note: this file only contains those requirements that are not installed by Yolo
+RPi.GPIO==0.7.1
+gpiozero==1.6.2
+paho-mqtt==1.6.1
