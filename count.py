@@ -18,8 +18,8 @@ counts = None
 lux = None
 newimage = None
 
-
-broker = os.getenv('MQTT_BROKER', 'mqtt.local')
+SLEEP_SECONDS_BETWEEN_DETECTS = 60
+broker = os.getenv('MQTT_BROKER', 'mqtt.hs3')
 port = 1883
 topic_people = "sensor/space/member/present"
 topic_lux = "sensor/light/room/0"
@@ -152,4 +152,4 @@ while True:
 
     publish(client)
 
-    time.sleep(10)
+    time.sleep(SLEEP_SECONDS_BETWEEN_DETECTS)

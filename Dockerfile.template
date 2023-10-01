@@ -28,12 +28,19 @@ RUN git checkout  6ae3dff7d48bd914a5ab5d20e277b8222cd547c7 \
     && pip install --extra-index-url=https://www.piwheels.org/simple -r requirements.txt \
     && true
 
+WORKDIR /
+
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
+WORKDIR yolov5
+
 # downloading and caching the model
 RUN python3 -c 'import torch;torch.hub.load("ultralytics/yolov5", "yolov5s")'
+# Damned previous command seems to install opencv-python again :(
+RUN pip uninstall -y opencv-python opencv-python-headless && pip install --no-cache-dir opencv-python-headless
+
 
 COPY count.py .
 
