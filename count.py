@@ -92,7 +92,7 @@ def server_img():
 threading.Thread(target=server_count, daemon=True).start()
 threading.Thread(target=server_img, daemon=True).start()
 
-MIN_LUX_LEVEL = 25  # if it's too dark, we're not going to count people, to save energy
+MIN_LUX_LEVEL = 5  # if it's too dark, we're not going to count people, to save energy
 
 display = LEDCharDisplay(3, 2, 22, 10, 9, 4, 17, dp=27, active_high=False) # 27 is dot
 #declared the GPIO pins for (a,b,c,d,e,f,g) and declared its CAS
