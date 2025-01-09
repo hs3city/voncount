@@ -19,10 +19,9 @@ RUN python3 --version
 
 ENV UDEV=on
 
-RUN git clone https://github.com/ultralytics/yolov5
+RUN git clone --depth 1 https://github.com/ultralytics/yolov5 -b 6981c2742af9030d7f30c0dc3f5c0bcf32588339
 WORKDIR yolov5
-RUN git checkout  6ae3dff7d48bd914a5ab5d20e277b8222cd547c7 \
-    && sed -i 's/opencv-python>=4.1.1/opencv-python-headless/' requirements.txt \
+RUN sed -i 's/opencv-python>=4.1.1/opencv-python-headless/' requirements.txt \
     && sed -i 's/torch>=1.7.0/torch==1.8.0/' requirements.txt \
     && sed -i 's/torchvision>=0.8.1/torchvision==0.9.1/' requirements.txt \
     && pip install --extra-index-url=https://www.piwheels.org/simple -r requirements.txt \
