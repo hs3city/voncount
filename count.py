@@ -5,18 +5,23 @@ import threading
 import time
 import json
 import random
-
-from picamera2 import Picamera2
+import urllib
 import numpy as np
-import torch
+from ultralytics import YOLO
 import cv2
-from gpiozero import LEDCharDisplay
-from paho.mqtt import client as mqtt_client
+
+NO_RPI = len(sys.argv) == 2 and sys.argv[1] == "NO_RPI"
+
+if NO_RPI:
+    print("Running in no-rpi mode")
+else:
+    from picamera2 import Picamera2
+    from gpiozero import LEDCharDisplay
+    from paho.mqtt import client as mqtt_client
 
 
-counts = None
-lux = None
-newimage = None
+CONFIDENCE_CUTOFF = 0.4
+MIN_LUX_LEVEL = 5  # if it's too dark, don't count people, save energy
 
 SLEEP_SECONDS_BETWEEN_DETECTS = 60
 broker = os.getenv('MQTT_BROKER', 'mqtt.hs3')
@@ -29,8 +34,12 @@ client_id = f'voncount-mqtt-{random.randint(0, 100)}'
 username = os.getenv('MQTT_USER', '')
 password = os.getenv('MQTT_PASSWORD', '')
 
+counts = None
+lux = None
+newimage = None
 
-def connect_mqtt() -> mqtt_client:
+
+def connect_mqtt() -> "mqtt_client":
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
             print("Connected to MQTT Broker!")
@@ -55,8 +64,9 @@ def publish(client):
         else:
             print(f"Failed to send message `{datum}` to topic {topic}")
 
+
 def server_count():
-    PORT=26178
+    PORT = 26178
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(("0.0.0.0", PORT))
@@ -68,8 +78,9 @@ def server_count():
             conn.send(json.dumps(counts).encode("UTF-8"))
             conn.close()
 
+
 def serve_img(conn):
-    try: 
+    try:
         print("img shared")
         if newimage is None:
             conn.close()
@@ -78,8 +89,9 @@ def serve_img(conn):
     finally:
         conn.close()
 
+
 def server_img():
-    PORT=26179
+    PORT = 26179
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(("0.0.0.0", PORT))
@@ -89,50 +101,63 @@ def server_img():
             conn, addr = sock.accept()
             threading.Thread(target=serve_img, args=(conn,)).start()
 
+
 threading.Thread(target=server_count, daemon=True).start()
 threading.Thread(target=server_img, daemon=True).start()
 
-MIN_LUX_LEVEL = 25  # if it's too dark, we're not going to count people, to save energy
+if not NO_RPI:
+    display = LEDCharDisplay(3, 2, 22, 10, 9, 4, 17, dp=27,
+                             active_high=False)  # 27 is dot
+    # declared the GPIO pins for (a,b,c,d,e,f,g) and declared its CAS
+    display.value = " ."  # signal for startup
+model = YOLO("yolo11n.pt")
 
-display = LEDCharDisplay(3, 2, 22, 10, 9, 4, 17, dp=27, active_high=False) # 27 is dot
-#declared the GPIO pins for (a,b,c,d,e,f,g) and declared its CAS
-display.value = " ."  # signal for startup
+if not NO_RPI:
+    picam2 = Picamera2()
+    config = picam2.create_still_configuration()
+    picam2.configure(config)
+    picam2.start()
 
-model = torch.hub.load('ultralytics/yolov5', 'yolov5s')  # or yolov5n - yolov5x6, custom
-
-picam2 = Picamera2()
-config = picam2.create_still_configuration()
-picam2.configure(config)
-picam2.start()
-
-client = connect_mqtt()
-client.loop_start()
+    client = connect_mqtt()
+    client.loop_start()
 
 prevchar = "NOT_A_CHAR"
 while True:
-    img = picam2.capture_array()
-    metadata = picam2.capture_metadata()
-    lux = metadata["Lux"]
+    if NO_RPI:
+        req = urllib.request.urlopen('https://ultralytics.com/images/bus.jpg')
+        arr = np.asarray(bytearray(req.read()), dtype=np.uint8)
+        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+        lux = 100
+    else:
+        img = picam2.capture_array()
+        metadata = picam2.capture_metadata()
+        lux = metadata["Lux"]
     if lux < MIN_LUX_LEVEL:
         print(f"Too dark (lux={lux:.2f}), not counting people")
         sys.stdout.flush()
         count_by_name = {"person": 0, "pizza": 0}
     else:
         print(f"Bright enough (lux={lux:.2f}), yoloing now")
-        img = img[600:, 200:-600, :]
         print(img.shape)
         sys.stdout.flush()
 
         # Inference
-        results = model(img)
-        results.print()
+        infer_start = time.time()
+        results = model([img])[0]
+        infer_run_sec = time.time() - infer_start
+        print(f"Inference took {infer_run_sec:.03f} seconds")
 
-        scores = results.xyxy[0][:, -2]
-        classes = np.array(results.xyxy[0][scores > .4, -1])
-        count_by_name = {name: np.sum(classes == nr) for nr, name in results.names.items()}
-        newimage = results.render()[0]
+        scores = results.boxes.conf
+        classes = np.array(results.boxes.cls)[scores > CONFIDENCE_CUTOFF]
+        print(scores)
+        print(classes)
+        count_by_name = {
+            name: np.sum(classes == nr) for nr, name in results.names.items()
+        }
+        newimage = results.plot()
 
-        print("persons:", count_by_name["person"], "pizzas: ", count_by_name["pizza"])
+        print("persons:", count_by_name["person"], "pizzas: ",
+              count_by_name["pizza"])
         sys.stdout.flush()
 
     persons = min(count_by_name["person"], 15)
@@ -140,16 +165,19 @@ while True:
     if count_by_name["pizza"]:
         char += "."
     if char == "0" and prevchar in "0 ":
-        print(f"Multiple 0's in a row, switching off display")
+        print("Multiple 0's in a row, switching off display")
         sys.stdout.flush()
 
         char = " "
     print(f"Showing on display: {repr(char)}")
     sys.stdout.flush()
-    display.value = char
+    if not NO_RPI:
+        display.value = char
     prevchar = char
-    counts = {"persons": int(count_by_name["person"]), "pizzas": int(count_by_name["pizza"])}
+    counts = {"persons": int(count_by_name["person"]),
+              "pizzas": int(count_by_name["pizza"])}
 
-    publish(client)
+    if not NO_RPI:
+        publish(client)
 
     time.sleep(SLEEP_SECONDS_BETWEEN_DETECTS)
