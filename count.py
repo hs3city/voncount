@@ -110,7 +110,7 @@ if not NO_RPI:
                              active_high=False)  # 27 is dot
     # declared the GPIO pins for (a,b,c,d,e,f,g) and declared its CAS
     display.value = " ."  # signal for startup
-model = YOLO("yolo11n.pt")
+model = YOLO("yolo11m.pt")
 
 if not NO_RPI:
     picam2 = Picamera2()

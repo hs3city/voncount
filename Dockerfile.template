@@ -29,7 +29,7 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # downloading and caching the model
-RUN yolo predict model=yolo11n.pt source='https://ultralytics.com/images/bus.jpg' && rm bus.jpg && rm -r runs/detect/predict
+RUN yolo predict model=yolo11m.pt source='https://ultralytics.com/images/bus.jpg' && rm bus.jpg && rm -r runs/detect/predict
 
 COPY count.py ./
 
