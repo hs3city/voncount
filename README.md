@@ -11,7 +11,8 @@ It displays the number of people on a [7 segment display](https://www.sparkfun.c
 
 Obviously from here you can do what you want with the data (e.g. send it to ~~discord server~~ mqtt server, after which it goes to discord).
 
-~~The system runs on balena (make sure you use 64-bit and `balenaOS 2.94.4`; there is an [issue](https://github.com/balena-io-experimental/libcamera-apps/issues/1) with at least some newer versions.~~ -- so far the system only runs on bare metal (without balena).
+The system runs on balena (Raspberry pi 3 64-bit, OS version balenaOS 6.1.24+rev1, supervisor version 16.10.3).
+Just make sure you set `BALENA_HOST_CONFIG_camera_auto_detect=1` in balena configuration.
 
 
 
