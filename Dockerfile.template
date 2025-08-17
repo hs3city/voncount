@@ -31,6 +31,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # downloading and caching the model
 RUN yolo predict model=yolo11m.pt source='https://ultralytics.com/images/bus.jpg' && rm bus.jpg && rm -r runs/detect/predict
 
-COPY count.py ./
+COPY src/peep/__init__.py ./count.py
 
 CMD (udevadm control --reload; python3 count.py)

@@ -1,0 +1,87 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "voncount"
+dynamic = ["version"]
+description = 'Count Von Count -- your friendly Hackerspace people counter'
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "Claude", email = "pypi@claude.nl" },
+  { name = "Piotr Gaczkowski", email = "DoomHammerNG@gmail.com" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+  "License :: OSI Approved :: MIT License",
+]
+dependencies = ["numpy==1.26.4", "ultralytics==8.3.59", "paho-mqtt>=2.1.0"]
+
+[project.urls]
+Documentation = "https://github.com/hs3city/voncount#readme"
+Issues = "https://github.com/hs3city/voncount/issues"
+Source = "https://github.com/hs3city/voncount"
+
+[tool.hatch.version]
+path = "src/voncount/__about__.py"
+
+[tool.hatch.envs.default]
+installer = "uv"
+
+
+[tool.hatch.envs.types]
+installer = "uv"
+extra-dependencies = ["mypy>=1.0.0", "pytest", "pytest-mqtt>=0.5.0"]
+
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/peep src/voncount tests}"
+
+[[tool.mypy.overrides]]
+module = ["ultralytics.*", "pytest_mqtt.*"]
+follow_untyped_imports = true
+
+[[tool.mypy.overrides]]
+module = ["gpiozero.*", "picamera2.*"]
+ignore_missing_imports = true
+
+[tool.hatch.envs.lint]
+extra-dependencies = ["ruff>=0.12.5"]
+scripts.lint-check = "ruff check --diff"
+scripts.format-check = "ruff format --diff"
+scripts.lint-fix = "ruff check --fix"
+scripts.format-fix = "ruff format"
+
+
+[tool.hatch.envs.hatch-test]
+installer = "uv"
+dependencies = ["pytest", "pytest-cov", "pytest-mqtt>=0.5.0"]
+
+[[tool.hatch.envs.hatch-test.matrix]]
+python = ["3.13", "3.12"]
+
+
+[tool.hatch.envs.coverage]
+detached = true
+installer = "uv"
+dependencies = ["coverage"]
+
+[tool.coverage.run]
+source_pkgs = ["peep", "voncount", "tests"]
+branch = true
+parallel = true
+omit = ["src/voncount/__about__.py", "src/peep/__about.py"]
+
+[tool.coverage.paths]
+peep = ["src/peep", "*/peep/src/peep"]
+voncount = ["src/voncount", "*/voncount/src/voncount"]
+tests = ["tests", "*/peep/tests", "*/voncount/tests"]
+
+[tool.coverage.report]
+exclude_lines = ["no cov", "if __name__ == .__main__.:", "if TYPE_CHECKING:"]
