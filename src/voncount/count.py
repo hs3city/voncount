@@ -10,8 +10,6 @@ import random
 
 broker = os.getenv("MQTT_BROKER", "mqtt.hs3")
 port = 1883
-topic_people = "sensor/space/member/present"
-topic_lux = "sensor/light/room/0"
 
 # generate client ID with pub prefix randomly
 client_id = f"voncount-mqtt-{random.randint(0, 100)}"
