@@ -1,0 +1,8 @@
+/.direnv/
+/.pre-commit-config.yaml
+/.ruff_cache
+/.venv
+/.env
+*.pt
+__pycache__
+/dist/

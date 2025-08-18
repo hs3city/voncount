@@ -1,0 +1,21 @@
+name: Validate Nix Flake
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  check-flake:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Install Lix
+        uses: DeterminateSystems/nix-installer-action@90bb610b90bf290cad97484ba341453bd1cbefea # v19
+        with:
+          source-url: https://install.lix.systems/lix/lix-installer-x86_64-linux
+          logger: pretty
+
+      - name: Check Flake
+        run: nix flake check --print-build-logs --no-sandbox

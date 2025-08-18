@@ -6,11 +6,11 @@ assets:
   repository:
     type: blob.asset
     data:
-      url: ''
+      url: ""
   logo:
     type: blob.asset
     data:
-      url: ''        
+      url: ""
 data:
   applicationConfigVariables:
     - BALENA_HOST_CONFIG_gpu_mem: 128

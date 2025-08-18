@@ -14,9 +14,6 @@ Obviously from here you can do what you want with the data (e.g. send it to ~~di
 The system runs on balena (Raspberry pi 3 64-bit, OS version balenaOS 6.1.24+rev1, supervisor version 16.10.3).
 Just make sure you set `BALENA_HOST_CONFIG_camera_auto_detect=1` in balena configuration.
 
-
-
 The system was created for internal use in [Hackerspace Trójmiasto](https://hs3.pl).
-
 
 More info (blog posts / photo's / etc) will follow.
